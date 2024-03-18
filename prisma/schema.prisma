@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+
+  isOnboardingComplete Boolean
+  onboardingType       Onboarding
+  onboardingStep       Int
+
+  organisations Organisation[] @relation("userOrgManyToMany")
+  organisation  Organisation[]
+
+  unapprovedOrganisationUsers Organisation[] @relation("unapprovedUsers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organisation {
+  id         String @id @default(uuid())
+  name       String
+  invitecode String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  boards Board[]
+  users  User[]  @relation("userOrgManyToMany")
+
+  unapprovedUsers User[] @relation("unapprovedUsers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Board {
+  id   String @id @default(uuid())
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  columns Column[]
+}
+
+model Column {
+  id   String @id @default(uuid())
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId String
+
+  tasks Task[]
+}
+
+model Task {
+  id           String @id @default(uuid())
+  name         String
+  subtaskCount Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  columnId String
+
+  subtasks Subtask[]
+}
+
+model Subtask {
+  id          String  @id @default(uuid())
+  name        String
+  isCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String?
+}
+
+enum Onboarding {
+  USER
+  ORGANISATION
+}
